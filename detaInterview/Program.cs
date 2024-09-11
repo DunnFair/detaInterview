@@ -1,7 +1,14 @@
+using Autofac.Extensions.DependencyInjection;
+using Autofac;
+using detaInterview.Repository.UnitOfWork;
+using detaInterview.Utils.AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using detaInterview.Autofac;
+using Microsoft.EntityFrameworkCore;
+using detaInterview.Repository.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
@@ -52,11 +59,23 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+
+builder.Services.AddDbContext<ApplicationDbContext>(option => option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnention")));
 builder.Services.AddControllers();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+//AutoMapper
+builder.Services.AddAutoMapper(typeof(OrganizationProfile));
+//這段是使用AutoFac的部分
+builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
+builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
+{
+    containerBuilder.RegisterModule(new AutoFacModuleRegister());
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -73,12 +92,11 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthorization();
-// 使用 Swagger
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+if (app.Environment.IsDevelopment())
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-});
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

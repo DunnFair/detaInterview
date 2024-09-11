@@ -9,6 +9,7 @@ namespace detaInterview.Utils.AutoMapper
         public OrganizationProfile()
         {
             CreateMap<Detail, DetailViewModel>();
+            CreateMap<DetailViewModel, Detail>();
         }
        
     }
